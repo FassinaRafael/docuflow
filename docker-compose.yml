@@ -1,0 +1,115 @@
+version: "3.8"
+
+services:
+  # 1. Banco de Dados (PostgreSQL)
+  postgres:
+    image: postgres:15-alpine
+    container_name: docuflow_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: docuflow_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d docuflow_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Object Storage (MinIO - Compatível com S3)
+  minio:
+    image: minio/minio
+    container_name: docuflow_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_password
+    ports:
+      - "9000:9000" # API S3
+      - "9001:9001" # Console UI
+    volumes:
+      - ./docker/data/minio:/data
+
+  # 3. Identity Provider (Keycloak)
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: docuflow_keycloak
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/docuflow_db
+      KC_DB_USERNAME: admin
+      KC_DB_PASSWORD: admin_password
+      KC_DB_SCHEMA: public
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # 4. Message Broker (Redis - para filas futuras)
+  redis:
+    image: redis:alpine
+    container_name: docuflow_redis
+    ports:
+      - "6379:6379"
+
+  # 5. Temporal Server (CORRIGIDO V2)
+  temporal:
+    image: temporalio/auto-setup:1.24.2
+    container_name: docuflow_temporal
+    ports:
+      - "7233:7233"
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=admin
+      - POSTGRES_PWD=admin_password
+      - POSTGRES_SEEDS=postgres
+      # REMOVIDA A LINHA QUE CAUSAVA O ERRO (DYNAMIC_CONFIG_FILE_PATH)
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # 6. Temporal UI (Interface Visual para ver os processos)
+  temporal-ui:
+    image: temporalio/ui:2.21.3
+    container_name: docuflow_temporal_ui
+    ports:
+      - "8081:8080" # Acessaremos em localhost:8081
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_CORS_ORIGINS=http://localhost:3000
+    depends_on:
+      - temporal
+
+      # 7. Sua API (O Garçom)
+  api:
+    build: ./apps/api
+    container_name: docuflow_api
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./apps/api/.env.docker # Usa o arquivo com nomes internos
+    depends_on:
+      postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+
+  # 8. Seu Worker (O Cozinheiro)
+  worker:
+    build: ./apps/api
+    container_name: docuflow_worker
+    command: python worker.py
+    env_file:
+      - ./apps/api/.env.docker
+    depends_on:
+      - api # Espera a API subir
+      - temporal

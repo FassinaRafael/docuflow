@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-multipart
+sqlalchemy
+psycopg2-binary
+temporalio
+google-generativeai
+python-dotenv
+boto3
+requests
+aiobotocore
+pytesseract
+pdf2image
+Pillow
+pypdf
