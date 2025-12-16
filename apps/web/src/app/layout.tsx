@@ -5,7 +5,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
-// 1. AQUI MUDAMOS O NOME DA ABA
 export const metadata: Metadata = {
   title: "DocuFlow | IA Compliance Audit",
   description:
@@ -20,7 +19,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
-        {/* 2. Envolvemos o app no ThemeProvider */}
+        {/* 2. Envolver o app no ThemeProvider */}
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
