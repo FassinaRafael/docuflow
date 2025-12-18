@@ -1,0 +1,32 @@
+# --- Segurança e Variáveis de Ambiente ---
+.env
+.env.docker
+# Garante que nenhum .env em subpastas seja subido
+**/.env
+**/.env.*
+# Exceção: permite subir um modelo de exemplo (se você criar um)
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- Docker e Dados Locais ---
+# Ignora a persistência do banco de dados (IMPORTANTE)
+docker/data/
+# Ignora logs do docker
+*.log
+
+# --- IDE e Sistema Operacional ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

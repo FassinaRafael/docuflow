@@ -4,9 +4,7 @@ from PIL import Image
 from pypdf import PdfReader
 from storage import get_s3_client, BUCKET_NAME
 
-# CONFIGURAÇÃO DO WINDOWS (Ajuste se instalou em outro lugar)
-# O r'...' antes da string é importante para o Windows ler as barras corretamente
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = r'C:\Users\rafael.fassina\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
 
 def extract_text_from_pdf_native(file_stream):
     """Tenta extrair texto de PDF digital (super rápido)"""
@@ -52,8 +50,6 @@ def process_document_text(filename: str):
             text = extract_text_from_pdf_native(file_stream)
             
             # Se retornar vazio, pode ser um PDF escaneado (imagem dentro do PDF)
-            # Nota: Converter PDF escaneado para imagem no Windows requer 'poppler', 
-            # que é complexo de instalar. Por enquanto, se falhar, avisaremos.
             if not text or len(text.strip()) < 10:
                 text = "[AVISO] PDF parece ser uma imagem escaneada. Para processar scans, precisamos de bibliotecas adicionais (Poppler)."
         else:
